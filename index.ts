@@ -1,37 +1,87 @@
 import { ApolloServer } from "@apollo/server"
 import { startStandaloneServer } from "@apollo/server/standalone"
+import { GraphQLError } from "graphql"
+import { v1 as uuid } from "uuid"
 
-const books = [
+const users = [
     {
         id: 1,
-        title: 'titulo Libro 1',
-        author: 'Zenen Peraza'
+        name: "Zenen Peraza",
+        surname: "Gil",
+        street: "Las mercedes",
+        zipCode: 3001,
+        city: "Barquisimeto",
+        phone: "+584245034999"
     },
     {
         id: 2,
-        title: 'titulo Libro 2',
-        author: 'Alexis Gil'
+        name: "Alexis",
+        surname: "Peraza",
+        street: "El Triunfo",
+        zipCode: 3001,
+        city: "Cabudare",
+        phone: "+584169556181"
     }
 ]
 
 const typeDefs = `
-    type Book {
-        id:ID!
-        title: String
-        author: String
+    type User {
+        id: ID!
+        name: String!
+        surname: String
+        street: String!
+        zipCode: Int!
+        phone: String
+        city: String!
+        address: String
     }
-    type Query{
-        books: [Book]
-        book(id:ID!): Book
+    type Query {
+        allUsers: [User]
+        userCount: Int!
+        findUserByName(name:String!): User
+        findUserById(id:ID!): User
+    }
+    type Mutation {
+        addUser(
+            name: String!
+            surname: String!
+            street: String!
+            zipCode: Int!
+            phone: String
+            city: String!
+        ): User
     }
 `
-
 const resolvers = {
+    User: {
+        address: (parent) => `${parent.street}, ${parent.zipCode}, ${parent.city}`
+    },
     Query: {
-        books: () => books,
-        book: (parent, args) => books.find((book) => book.id === parseInt(args.id))
+        allUsers: () => users,
+        userCount: () => users.length,
+        findUserByName: (parent, args) =>  users.find( user => user.name === args.name),
+        findUserById: (parent, args) =>  users.find( user => user.id === args.id)
+    },
+    Mutation: {
+        addUser: (parent, args) => {
+            if(users.find(user => user.name === args.name)){
+                throw new GraphQLError('tue users already exists.', {
+                    extensions: {
+                        code: 'BAD_USER_INPUT'
+                    }
+                   
+                })
+            }
+            const user = {...args, id: uuid()}
+            users.push(user)
+            return user
+        }
     }
+    
+
 }
+
+
 
 const server = new ApolloServer({
     typeDefs, resolvers
