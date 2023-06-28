@@ -12,5 +12,4 @@ export const typeDefs = `
     type Query {
         allUsers: [User]       
     }
-
-`
+`;
